@@ -4,6 +4,7 @@
 """maven_build.py — build & run a Maven project inside a Cube sandbox."""
 
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 from e2b import Sandbox
@@ -66,10 +67,14 @@ with Sandbox.create(template=template_id) as sandbox:
     if result.exit_code != 0:
         print(f"mvn compile FAILED (exit={result.exit_code})")
         print(result.stderr)
-        exit(1)
+        sys.exit(1)
 
     print("\n=== mvn exec:java ===")
     result = sandbox.commands.run(
         "mvn --batch-mode exec:java -Dexec.mainClass=com.example.App",
         on_stdout=lambda line: print(f"  [mvn] {line}"),
     )
+    if result.exit_code != 0:
+        print(f"mvn exec:java FAILED (exit={result.exit_code})")
+        print(result.stderr)
+        sys.exit(1)

@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 #
 # java-sandbox: JDK 21 + Maven 3.9 on top of cubesandbox-base.
 #
@@ -17,19 +18,21 @@ FROM ${CUBE_BASE_IMAGE}
 ARG DEBIAN_FRONTEND=noninteractive
 ARG JDK_VERSION=21
 ARG MAVEN_VERSION=3.9.9
+ARG TARGETARCH
 
-# Install wget for downloading packages
+# Install wget for downloads; removed at the end to keep the image lean.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        wget \
-        ca-certificates \
+    && apt-get install -y --no-install-recommends wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and install JDK 21 from Adoptium GitHub releases
-RUN wget -q "https://github.com/adoptium/temurin${JDK_VERSION}-binaries/releases/download/jdk-${JDK_VERSION}.0.6%2B7/OpenJDK${JDK_VERSION}U-jdk_x64_linux_hotspot_${JDK_VERSION}.0.6_7.tar.gz" \
+# Download and install JDK 21 from Adoptium GitHub releases.
+# The extracted directory name is discovered dynamically so the ARG
+# can be bumped without editing the mv target.
+RUN wget -q "https://github.com/adoptium/temurin${JDK_VERSION}-binaries/releases/download/jdk-${JDK_VERSION}.0.6%2B7/OpenJDK${JDK_VERSION}U-jdk_${TARGETARCH}_linux_hotspot_${JDK_VERSION}.0.6_7.tar.gz" \
     -O /tmp/jdk.tar.gz \
+    && dir=$(tar tzf /tmp/jdk.tar.gz | head -1 | cut -d/ -f1) \
     && tar xzf /tmp/jdk.tar.gz -C /opt \
-    && mv /opt/jdk-${JDK_VERSION}.0.6+7 /opt/jdk-${JDK_VERSION} \
+    && mv "/opt/$dir" "/opt/jdk-${JDK_VERSION}" \
     && rm /tmp/jdk.tar.gz
 
 ENV JAVA_HOME="/opt/jdk-${JDK_VERSION}"
@@ -40,7 +43,10 @@ RUN wget -q "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/bina
     -O /tmp/maven.tar.gz \
     && tar xzf /tmp/maven.tar.gz -C /opt \
     && ln -s "/opt/apache-maven-${MAVEN_VERSION}" /opt/maven \
-    && rm /tmp/maven.tar.gz
+    && rm /tmp/maven.tar.gz \
+    && apt-get purge -y wget \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV MAVEN_HOME="/opt/maven"
 ENV PATH="${MAVEN_HOME}/bin:${PATH}"

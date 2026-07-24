@@ -4,6 +4,7 @@
 """hello_java.py — compile & run a Java class inside a Cube sandbox."""
 
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 from e2b import Sandbox
@@ -22,10 +23,6 @@ with Sandbox.create(template=template_id) as sandbox:
     result = sandbox.commands.run("java --version")
     print(result.stdout)
 
-    print("\n=== mvn --version ===")
-    result = sandbox.commands.run("mvn --version")
-    print(result.stdout)
-
     print("\n=== upload & compile HelloSandbox.java ===")
     sandbox.files.write("HelloSandbox.java", java_source)
     result = sandbox.commands.run("javac HelloSandbox.java")
@@ -33,7 +30,7 @@ with Sandbox.create(template=template_id) as sandbox:
     if result.exit_code != 0:
         print("javac FAILED:")
         print(result.stderr)
-        exit(1)
+        sys.exit(1)
 
     print("javac: compiled successfully")
 
