@@ -20,29 +20,25 @@ ARG JDK_FULL_VERSION=21.0.6+7
 ARG MAVEN_VERSION=3.9.9
 ARG TARGETARCH
 
-# Map Docker's TARGETARCH (amd64, arm64) to Adoptium's naming (x64, aarch64).
-RUN [ -z "$TARGETARCH" ] && TARGETARCH=$(uname -m) || true
-RUN arch="${TARGETARCH}"; \
-    [ "$arch" = "amd64" ] && arch="x64"; \
-    [ "$arch" = "arm64" ] && arch="aarch64"; \
-    echo "$arch" > /tmp/jdk_arch
-
 # Install wget for downloads; removed at the end to keep the image lean.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and install JDK from Adoptium GitHub releases.
-# The extracted directory name is discovered dynamically so only
-# JDK_FULL_VERSION needs updating on the next security release.
-RUN arch=$(cat /tmp/jdk_arch) && \
+# ${TARGETARCH:-$(uname -m)} reads the build-arg if set (BuildKit),
+# falling back to `uname -m` for non-BuildKit builds. Map Docker's
+# naming (amd64, arm64) to Adoptium's naming (x64, aarch64).
+RUN arch="${TARGETARCH:-$(uname -m)}"; \
+    [ "$arch" = "amd64" ] && arch="x64"; \
+    [ "$arch" = "arm64" ] && arch="aarch64"; \
     majorver=$(echo "${JDK_FULL_VERSION}" | cut -d. -f1) && \
     url="https://github.com/adoptium/temurin${majorver}-binaries/releases/download/jdk-${JDK_FULL_VERSION}/OpenJDK${majorver}U-jdk_${arch}_linux_hotspot_$(echo ${JDK_FULL_VERSION} | tr '+' '_').tar.gz" && \
     wget -q "$url" -O /tmp/jdk.tar.gz && \
     dir=$(tar tzf /tmp/jdk.tar.gz | head -1 | cut -d/ -f1) && \
     tar xzf /tmp/jdk.tar.gz -C /opt && \
     mv "/opt/$dir" "/opt/jdk-${majorver}" && \
-    rm /tmp/jdk.tar.gz /tmp/jdk_arch
+    rm /tmp/jdk.tar.gz
 
 ENV JAVA_HOME="/opt/jdk-$(echo ${JDK_FULL_VERSION} | cut -d. -f1)"
 ENV PATH="${JAVA_HOME}/bin:${PATH}"

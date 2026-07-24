@@ -23,6 +23,10 @@ with Sandbox.create(template=template_id) as sandbox:
     result = sandbox.commands.run("java --version")
     print(result.stdout)
 
+    print("\n=== mvn --version ===")
+    result = sandbox.commands.run("mvn --version")
+    print(result.stdout)
+
     print("\n=== upload & compile HelloSandbox.java ===")
     sandbox.files.write("HelloSandbox.java", java_source)
     result = sandbox.commands.run("javac HelloSandbox.java")
