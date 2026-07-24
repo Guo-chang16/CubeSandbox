@@ -15,6 +15,8 @@ template_id = os.environ["CUBE_TEMPLATE_ID"]
 
 java_source = (Path(__file__).parent / "HelloSandbox.java").read_text()
 
+ok = True
+
 with Sandbox.create(template=template_id) as sandbox:
     print("=== sandbox info ===")
     print(sandbox.get_info())
@@ -34,14 +36,20 @@ with Sandbox.create(template=template_id) as sandbox:
     if result.exit_code != 0:
         print("javac FAILED:")
         print(result.stderr)
-        sys.exit(1)
+        ok = False
 
-    print("javac: compiled successfully")
+    if ok:
+        print("javac: compiled successfully")
 
-    print("\n=== run HelloSandbox ===")
-    result = sandbox.commands.run("java HelloSandbox")
-    if result.exit_code != 0:
-        print("java FAILED:")
-        print(result.stderr)
-        sys.exit(1)
-    print(result.stdout)
+        print("\n=== run HelloSandbox ===")
+        result = sandbox.commands.run("java HelloSandbox")
+        if result.exit_code != 0:
+            print("java FAILED:")
+            print(result.stderr)
+            ok = False
+
+    if ok:
+        print(result.stdout)
+
+if not ok:
+    sys.exit(1)

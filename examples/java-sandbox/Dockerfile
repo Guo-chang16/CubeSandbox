@@ -33,6 +33,7 @@ RUN apt-get update \
        [ "$arch" = "x86_64" ] && arch="x64"; \
        [ "$arch" = "amd64" ]  && arch="x64"; \
        [ "$arch" = "arm64" ]  && arch="aarch64"; \
+       [ "$arch" = "arm" ]    && { echo "Adoptium has no JDK 21 build for 32-bit ARM" >&2; exit 1; }; \
        jdk_url="https://github.com/adoptium/temurin${JDK_MAJOR}-binaries/releases/download/jdk-${JDK_FULL_VERSION}/OpenJDK${JDK_MAJOR}U-jdk_${arch}_linux_hotspot_$(echo ${JDK_FULL_VERSION} | tr '+' '_').tar.gz"; \
        mvn_url="https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz" \
     && wget -q "$jdk_url.sha256" -O /tmp/jdk.tar.gz.sha256 \

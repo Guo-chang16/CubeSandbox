@@ -65,6 +65,8 @@ public class App {
     }
 }"""
 
+ok = True
+
 with Sandbox.create(template=template_id) as sandbox:
     print("=== creating Maven project ===")
     sandbox.commands.run("mkdir -p src/main/java/com/example")
@@ -79,14 +81,18 @@ with Sandbox.create(template=template_id) as sandbox:
     if result.exit_code != 0:
         print(f"mvn compile FAILED (exit={result.exit_code})")
         print(result.stderr)
-        sys.exit(1)
+        ok = False
 
-    print("\n=== mvn exec:java ===")
-    result = sandbox.commands.run(
-        "mvn --batch-mode exec:java",
-        on_stdout=lambda line: print(f"  [mvn] {line}"),
-    )
-    if result.exit_code != 0:
-        print(f"mvn exec:java FAILED (exit={result.exit_code})")
-        print(result.stderr)
-        sys.exit(1)
+    if ok:
+        print("\n=== mvn exec:java ===")
+        result = sandbox.commands.run(
+            "mvn --batch-mode exec:java",
+            on_stdout=lambda line: print(f"  [mvn] {line}"),
+        )
+        if result.exit_code != 0:
+            print(f"mvn exec:java FAILED (exit={result.exit_code})")
+            print(result.stderr)
+            ok = False
+
+if not ok:
+    sys.exit(1)
