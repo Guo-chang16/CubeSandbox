@@ -17,6 +17,7 @@ FROM ${CUBE_BASE_IMAGE}
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG JDK_FULL_VERSION=21.0.6+7
+ARG JDK_MAJOR=21
 ARG MAVEN_VERSION=3.9.9
 ARG TARGETARCH
 
@@ -40,7 +41,7 @@ RUN arch="${TARGETARCH:-$(uname -m)}"; \
     mv "/opt/$dir" "/opt/jdk-${majorver}" && \
     rm /tmp/jdk.tar.gz
 
-ENV JAVA_HOME="/opt/jdk-$(echo ${JDK_FULL_VERSION} | cut -d. -f1)"
+ENV JAVA_HOME="/opt/jdk-${JDK_MAJOR}"
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Download and install Maven

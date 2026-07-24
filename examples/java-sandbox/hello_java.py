@@ -40,4 +40,8 @@ with Sandbox.create(template=template_id) as sandbox:
 
     print("\n=== run HelloSandbox ===")
     result = sandbox.commands.run("java HelloSandbox")
+    if result.exit_code != 0:
+        print("java FAILED:")
+        print(result.stderr)
+        sys.exit(1)
     print(result.stdout)
