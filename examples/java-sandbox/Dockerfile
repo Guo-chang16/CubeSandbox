@@ -31,14 +31,14 @@ RUN apt-get update \
 # falling back to `uname -m` for non-BuildKit builds. Map Docker's
 # naming (amd64, arm64) to Adoptium's naming (x64, aarch64).
 RUN arch="${TARGETARCH:-$(uname -m)}"; \
-    [ "$arch" = "amd64" ] && arch="x64"; \
-    [ "$arch" = "arm64" ] && arch="aarch64"; \
-    majorver=$(echo "${JDK_FULL_VERSION}" | cut -d. -f1) && \
-    url="https://github.com/adoptium/temurin${majorver}-binaries/releases/download/jdk-${JDK_FULL_VERSION}/OpenJDK${majorver}U-jdk_${arch}_linux_hotspot_$(echo ${JDK_FULL_VERSION} | tr '+' '_').tar.gz" && \
+    [ "$arch" = "x86_64" ] && arch="x64"; \
+    [ "$arch" = "amd64" ]  && arch="x64"; \
+    [ "$arch" = "arm64" ]  && arch="aarch64"; \
+    url="https://github.com/adoptium/temurin${JDK_MAJOR}-binaries/releases/download/jdk-${JDK_FULL_VERSION}/OpenJDK${JDK_MAJOR}U-jdk_${arch}_linux_hotspot_$(echo ${JDK_FULL_VERSION} | tr '+' '_').tar.gz" && \
     wget -q "$url" -O /tmp/jdk.tar.gz && \
     dir=$(tar tzf /tmp/jdk.tar.gz | head -1 | cut -d/ -f1) && \
     tar xzf /tmp/jdk.tar.gz -C /opt && \
-    mv "/opt/$dir" "/opt/jdk-${majorver}" && \
+    mv "/opt/$dir" "/opt/jdk-${JDK_MAJOR}" && \
     rm /tmp/jdk.tar.gz
 
 ENV JAVA_HOME="/opt/jdk-${JDK_MAJOR}"
