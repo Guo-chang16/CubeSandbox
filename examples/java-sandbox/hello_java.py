@@ -7,7 +7,7 @@ import os
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
-from e2b import Sandbox
+from e2b_code_interpreter import Sandbox
 
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"), override=False)
 

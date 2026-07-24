@@ -7,7 +7,7 @@ import os
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
-from e2b import Sandbox
+from e2b_code_interpreter import Sandbox
 
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"), override=False)
 
@@ -35,6 +35,18 @@ pom_xml = """<?xml version="1.0" encoding="UTF-8"?>
             <version>2.11.0</version>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <mainClass>com.example.App</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>"""
 
 app_java = """package com.example;
@@ -71,7 +83,7 @@ with Sandbox.create(template=template_id) as sandbox:
 
     print("\n=== mvn exec:java ===")
     result = sandbox.commands.run(
-        "mvn --batch-mode exec:java -Dexec.mainClass=com.example.App",
+        "mvn --batch-mode exec:java",
         on_stdout=lambda line: print(f"  [mvn] {line}"),
     )
     if result.exit_code != 0:

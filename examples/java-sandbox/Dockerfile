@@ -16,26 +16,35 @@ ARG CUBE_BASE_IMAGE=ghcr.io/tencentcloud/cubesandbox-base:2026.16
 FROM ${CUBE_BASE_IMAGE}
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG JDK_VERSION=21
+ARG JDK_FULL_VERSION=21.0.6+7
 ARG MAVEN_VERSION=3.9.9
 ARG TARGETARCH
+
+# Map Docker's TARGETARCH (amd64, arm64) to Adoptium's naming (x64, aarch64).
+RUN [ -z "$TARGETARCH" ] && TARGETARCH=$(uname -m) || true
+RUN arch="${TARGETARCH}"; \
+    [ "$arch" = "amd64" ] && arch="x64"; \
+    [ "$arch" = "arm64" ] && arch="aarch64"; \
+    echo "$arch" > /tmp/jdk_arch
 
 # Install wget for downloads; removed at the end to keep the image lean.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and install JDK 21 from Adoptium GitHub releases.
-# The extracted directory name is discovered dynamically so the ARG
-# can be bumped without editing the mv target.
-RUN wget -q "https://github.com/adoptium/temurin${JDK_VERSION}-binaries/releases/download/jdk-${JDK_VERSION}.0.6%2B7/OpenJDK${JDK_VERSION}U-jdk_${TARGETARCH}_linux_hotspot_${JDK_VERSION}.0.6_7.tar.gz" \
-    -O /tmp/jdk.tar.gz \
-    && dir=$(tar tzf /tmp/jdk.tar.gz | head -1 | cut -d/ -f1) \
-    && tar xzf /tmp/jdk.tar.gz -C /opt \
-    && mv "/opt/$dir" "/opt/jdk-${JDK_VERSION}" \
-    && rm /tmp/jdk.tar.gz
+# Download and install JDK from Adoptium GitHub releases.
+# The extracted directory name is discovered dynamically so only
+# JDK_FULL_VERSION needs updating on the next security release.
+RUN arch=$(cat /tmp/jdk_arch) && \
+    majorver=$(echo "${JDK_FULL_VERSION}" | cut -d. -f1) && \
+    url="https://github.com/adoptium/temurin${majorver}-binaries/releases/download/jdk-${JDK_FULL_VERSION}/OpenJDK${majorver}U-jdk_${arch}_linux_hotspot_$(echo ${JDK_FULL_VERSION} | tr '+' '_').tar.gz" && \
+    wget -q "$url" -O /tmp/jdk.tar.gz && \
+    dir=$(tar tzf /tmp/jdk.tar.gz | head -1 | cut -d/ -f1) && \
+    tar xzf /tmp/jdk.tar.gz -C /opt && \
+    mv "/opt/$dir" "/opt/jdk-${majorver}" && \
+    rm /tmp/jdk.tar.gz /tmp/jdk_arch
 
-ENV JAVA_HOME="/opt/jdk-${JDK_VERSION}"
+ENV JAVA_HOME="/opt/jdk-$(echo ${JDK_FULL_VERSION} | cut -d. -f1)"
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Download and install Maven
