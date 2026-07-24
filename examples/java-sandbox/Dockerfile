@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 #
 # java-sandbox: JDK 21 + Maven 3.9 on top of cubesandbox-base.
 #
@@ -19,33 +18,32 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG JDK_VERSION=21
 ARG MAVEN_VERSION=3.9.9
 
-# Install JDK 21 via Adoptium APT repo
+# Install wget for downloading packages
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         wget \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public \
-    | gpg --dearmor -o /usr/share/keyrings/adoptium-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/adoptium-archive-keyring.gpg] https://packages.adoptium.net/artifactory/deb ubuntu-jammy main" \
-    > /etc/apt/sources.list.d/adoptium.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-        "temurin-${JDK_VERSION}-jdk=${JDK_VERSION}*" \
-    && rm -rf /var/lib/apt/lists/*
+# Download and install JDK 21 from Adoptium GitHub releases
+RUN wget -q "https://github.com/adoptium/temurin${JDK_VERSION}-binaries/releases/download/jdk-${JDK_VERSION}.0.6%2B7/OpenJDK${JDK_VERSION}U-jdk_x64_linux_hotspot_${JDK_VERSION}.0.6_7.tar.gz" \
+    -O /tmp/jdk.tar.gz \
+    && tar xzf /tmp/jdk.tar.gz -C /opt \
+    && mv /opt/jdk-${JDK_VERSION}.0.6+7 /opt/jdk-${JDK_VERSION} \
+    && rm /tmp/jdk.tar.gz
 
-ARG TARGETARCH
-ENV JAVA_HOME="/usr/lib/jvm/temurin-${JDK_VERSION}-jdk-${TARGETARCH}"
+ENV JAVA_HOME="/opt/jdk-${JDK_VERSION}"
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
-# Install Maven
+# Download and install Maven
 RUN wget -q "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz" \
-    && tar xzf "apache-maven-${MAVEN_VERSION}-bin.tar.gz" -C /opt \
+    -O /tmp/maven.tar.gz \
+    && tar xzf /tmp/maven.tar.gz -C /opt \
     && ln -s "/opt/apache-maven-${MAVEN_VERSION}" /opt/maven \
-    && rm "apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+    && rm /tmp/maven.tar.gz
 
 ENV MAVEN_HOME="/opt/maven"
-ENV PATH="${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${PATH}"
+ENV PATH="${MAVEN_HOME}/bin:${PATH}"
 
 # Pre-create workspace owned by the `user` account (uid=1000, provisioned by base image)
 RUN mkdir -p /home/user/workspace /home/user/.m2 \
